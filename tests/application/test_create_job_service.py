@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from app.application.services.create_job_service import (
     CreateJobService,
 )
@@ -225,3 +227,50 @@ def test_create_job_service_defaults_command_to_none() -> None:
     )
 
     assert job.command is None
+
+
+def test_create_job_service_sets_the_retry_budget() -> None:
+    """
+    The budget given at creation is the one the reconciliation
+    loop spends when it reclaims the job (ADR 0102).
+    """
+    service = CreateJobService(
+        job_repository=InMemoryJobRepository(),
+        record_job_events_service=RecordJobEventsService(
+            event_repository=InMemoryEventRepository(),
+        ),
+    )
+
+    job = service.execute(
+        ResourceRequirements(
+            cpu_cores=1,
+            memory_mib=512,
+            vram_mib=0,
+        ),
+        DEFAULT_TENANT_ID,
+        max_retries=3,
+    )
+
+    assert job.max_retries == 3
+    assert job.retry_count == 0
+    assert job.can_retry()
+
+
+def test_create_job_service_rejects_a_negative_retry_budget() -> None:
+    service = CreateJobService(
+        job_repository=InMemoryJobRepository(),
+        record_job_events_service=RecordJobEventsService(
+            event_repository=InMemoryEventRepository(),
+        ),
+    )
+
+    with pytest.raises(ValueError):
+        service.execute(
+            ResourceRequirements(
+                cpu_cores=1,
+                memory_mib=512,
+                vram_mib=0,
+            ),
+            DEFAULT_TENANT_ID,
+            max_retries=-1,
+        )

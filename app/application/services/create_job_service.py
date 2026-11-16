@@ -46,17 +46,28 @@ class CreateJobService:
         resources: ResourceRequirements,
         tenant_id: TenantId,
         command: list[str] | None = None,
+        max_retries: int = 0,
     ) -> Job:
         """
         Create a QUEUED job that belongs to tenant_id for its whole
         life (ADR 0064). Callers take the tenant from the
         authenticated key, never from request input.
+
+        max_retries is the job's retry budget (ADR 0102). The
+        reconciliation loop and RetryJobService spend it; nothing
+        else sets it after creation.
         """
+        if max_retries < 0:
+            raise ValueError(
+                "max_retries must not be negative."
+            )
+
         job = Job(
             id=JobId.new(),
             resources=resources,
             tenant_id=tenant_id,
             command=command,
+            max_retries=max_retries,
         )
 
         job.queue()

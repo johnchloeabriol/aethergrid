@@ -157,6 +157,7 @@ def create_job(
         resources,
         caller.tenant_id,
         request.command,
+        request.max_retries,
     )
 
     return CreateJobResponse(
@@ -279,6 +280,8 @@ def get_job(
         memory_mib=job.resources.memory_mib,
         vram_mib=job.resources.vram_mib,
         exit_code=job.exit_code,
+        max_retries=job.max_retries,
+        retry_count=job.retry_count,
         submitted_at=job.submitted_at,
         started_at=job.started_at,
         completed_at=job.completed_at,
@@ -379,6 +382,8 @@ def cancel_job(
         memory_mib=job.resources.memory_mib,
         vram_mib=job.resources.vram_mib,
         exit_code=job.exit_code,
+        max_retries=job.max_retries,
+        retry_count=job.retry_count,
         submitted_at=job.submitted_at,
         started_at=job.started_at,
         completed_at=job.completed_at,
@@ -408,7 +413,9 @@ def retry_job(
     budget, it's returned unchanged rather than treated as
     an error -- asking to retry a job that doesn't need or
     can't accept a retry isn't a client mistake worth
-    rejecting, it's a no-op worth reporting honestly.
+    rejecting, it's a no-op worth reporting honestly. The
+    response carries max_retries and retry_count, so the caller
+    can see which case it was (ADR 0102).
     """
     job_uuid = _parse_job_id(job_id)
 
@@ -427,6 +434,8 @@ def retry_job(
         memory_mib=job.resources.memory_mib,
         vram_mib=job.resources.vram_mib,
         exit_code=job.exit_code,
+        max_retries=job.max_retries,
+        retry_count=job.retry_count,
         submitted_at=job.submitted_at,
         started_at=job.started_at,
         completed_at=job.completed_at,

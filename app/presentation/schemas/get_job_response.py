@@ -23,6 +23,13 @@ class GetJobResponse(BaseModel):
     memory_mib: int
     vram_mib: int
     exit_code: int | None
+    max_retries: int
+    retry_count: int
+    """
+    The retry budget and how much of it is spent (ADR 0102). A
+    caller can tell from these two why POST /jobs/{id}/retry left
+    a FAILED job unchanged: retry_count has reached max_retries.
+    """
     submitted_at: datetime
     started_at: datetime | None
     completed_at: datetime | None
